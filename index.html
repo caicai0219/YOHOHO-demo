@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yohoho 无人集团运营系统 · Demo</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+         background:#0b0f14; color:#d8e0e8; min-height:100vh; padding:24px; }
+  .wrap { max-width:1100px; margin:0 auto; }
+  header { display:flex; justify-content:space-between; align-items:center;
+           border-bottom:1px solid #1e2a36; padding-bottom:16px; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+  h1 { font-size:20px; font-weight:600; letter-spacing:0.5px; }
+  h1 span { color:#4fd1c5; }
+  .status { font-size:13px; padding:6px 14px; border-radius:20px; background:#12302a; color:#4fd1c5; border:1px solid #1e4a40; }
+  .status.frozen { background:#3a1414; color:#ff6b6b; border-color:#5a2020; }
+  .grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:22px; }
+  @media(max-width:760px){ .grid{grid-template-columns:repeat(2,1fr);} }
+  .metric { background:#111a22; border:1px solid #1e2a36; border-radius:10px; padding:14px 16px; }
+  .metric .label { font-size:12px; color:#7a8b9a; margin-bottom:6px; }
+  .metric .value { font-size:22px; font-weight:600; }
+  .metric .delta { font-size:12px; margin-top:4px; }
+  .up { color:#4fd1c5; } .down { color:#ff8a8a; }
+  .section-title { font-size:15px; font-weight:600; margin:24px 0 12px; color:#a8b8c8;
+                   display:flex; align-items:center; gap:8px; }
+  .section-title::before { content:""; width:3px; height:14px; background:#4fd1c5; border-radius:2px; }
+  .card { background:#111a22; border:1px solid #1e2a36; border-radius:10px; padding:18px; margin-bottom:14px; }
+  .card h3 { font-size:14px; margin-bottom:10px; color:#e8f0f8; }
+  .tag { display:inline-block; font-size:11px; padding:3px 9px; border-radius:12px; margin-right:6px; margin-bottom:8px; }
+  .tag.l3 { background:#3a2a10; color:#f0b860; border:1px solid #5a4020; }
+  .tag.sig { background:#12283a; color:#6ab8f0; border:1px solid #1e4060; }
+  .card p { font-size:13px; line-height:1.7; color:#a8b8c8; margin-bottom:8px; }
+  .card .sim { font-size:12px; color:#7a8b9a; background:#0d151d; border-radius:8px; padding:10px 12px; margin:10px 0; line-height:1.7; }
+  .sim b { color:#a8b8c8; }
+  .actions { display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
+  button { font-family:inherit; font-size:13px; padding:8px 18px; border-radius:8px; border:1px solid transparent;
+           cursor:pointer; transition:opacity .15s; }
+  button:hover { opacity:.85; }
+  .btn-approve { background:#1a4a3e; color:#4fd1c5; border-color:#2a6a5a; }
+  .btn-reject { background:#3a1a1a; color:#ff8a8a; border-color:#5a2a2a; }
+  .btn-review { background:#2a2a1a; color:#e0c060; border-color:#4a4a2a; }
+  .btn-freeze { background:#5a1a1a; color:#ff9a9a; border-color:#8a2a2a; font-weight:600; padding:10px 22px; }
+  .btn-freeze.active { background:#8a2a2a; color:#fff; }
+  .log { background:#0d151d; border:1px solid #1e2a36; border-radius:10px; padding:14px;
+         font-family:"SF Mono","Consolas",monospace; font-size:12px; line-height:1.9;
+         max-height:220px; overflow-y:auto; color:#7a9aaa; }
+  .log .ts { color:#4fd1c5; } .log .ok { color:#4fd1c5; } .log .no { color:#ff8a8a; } .log .warn { color:#f0b860; }
+  .resolved { opacity:.5; }
+  .resolved .actions { display:none; }
+  .footer { margin-top:28px; font-size:11px; color:#4a5a6a; text-align:center; line-height:1.8; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Yohoho <span>·</span> 无人集团运营系统</h1>
+    <div class="status" id="sysStatus">● 系统运行中 · L1/L2 自动执行</div>
+  </header>
+
+  <div class="grid">
+    <div class="metric"><div class="label">昨日营收（集团合计）</div><div class="value">¥ 2,847,300</div><div class="delta up">↑ 4.2% 环比</div></div>
+    <div class="metric"><div class="label">运营成本</div><div class="value">¥ 1,620,500</div><div class="delta down">↓ 1.8% 环比</div></div>
+    <div class="metric"><div class="label">综合良率</div><div class="value">99.3%</div><div class="delta up">↑ 0.1pp</div></div>
+    <div class="metric"><div class="label">现金流余额</div><div class="value">¥ 18,420,000</div><div class="delta up">健康区间</div></div>
+  </div>
+
+  <div class="section-title">今日待 Yohoho 决策（L3）<span id="pendingCount" style="color:#f0b860;font-size:13px;">· 2 项</span></div>
+
+  <div class="card" id="card1">
+    <h3>子公司B · 产线3 预测性停机检修提前</h3>
+    <span class="tag l3">L3 需显式批准</span><span class="tag sig">信号：振动传感器异常 + 良率环比 -0.4pp</span>
+    <p>质量与安全Agent检测到产线3主轴振动频谱出现早期磨损特征，预测72小时内非计划停机概率 68%。建议提前48小时停机检修，预计影响产能 6%，检修成本 ¥ 85,000。</p >
+    <div class="sim"><b>模拟回测（近3年同类情境 14 次）：</b>提前检修策略平均避免损失 ¥ 310,000，胜率 86%；不干预情境下平均非计划停机时长 11.2 小时。置信度：<b>高（0.86）</b></div>
+    <div class="actions">
+      <button class="btn-approve" onclick="decide('card1','批准','提前停机检修')">批准</button>
+      <button class="btn-reject" onclick="decide('card1','否决','维持生产')">否决</button>
+      <button class="btn-review" onclick="decide('card1','转人工复核','外部设备专家介入')">要求人工复核</button>
+    </div>
+  </div>
+
+  <div class="card" id="card2">
+    <h3>子公司A · 主要原材料供应商切换建议</h3>
+    <span class="tag l3">L3 需显式批准</span><span class="tag sig">信号：原供应商报价上调 7.2% + 交货周期延长</span>
+    <p>供应链Agent比对3家备选供应商，建议将子公司A的钢材采购切换至备选供应商S2。预计年度采购成本下降 ¥ 420,000，但新供应商首次合作存在质量磨合风险。</p >
+    <div class="sim"><b>模拟回测：</b>切换后前3个月来料合格率预测 97.5%（当前 99.1%），第4个月起回升至 99% 以上。风险窗口期质量成本预估 ¥ 60,000–120,000。置信度：<b>中（0.71）</b></div>
+    <div class="actions">
+      <button class="btn-approve" onclick="decide('card2','批准','切换至供应商S2')">批准</button>
+      <button class="btn-reject" onclick="decide('card2','否决','维持原供应商')">否决</button>
+      <button class="btn-review" onclick="decide('card2','转人工复核','采购与质量联合评审')">要求人工复核</button>
+    </div>
+  </div>
+
+  <div class="section-title">战略推演面板（每周更新 · 仅供参考，不自动执行）</div>
+  <div class="card">
+    <h3>本周战略选项包</h3>
+    <p>触发信号：行业PMI 48.6（连续两月低于荣枯线）、竞争对手C宣布扩产、子公司B所在园区环保新规征求意见稿发布。</p >
+    <div class="sim">
+      <b>选项1：</b>暂缓子公司B二期扩产，将资本开支转向产线自动化升级。预期IRR 14.2%，最大回撤 8%。<br>
+      <b>选项2：</b>维持扩产计划，但将环保合规预算上调 15% 以对冲新规风险。预期IRR 11.8%，合规风险显著降低。<br>
+      <b>选项3：</b>启动子公司A对上游供应商S2的少数股权投资，锁定供应链。预期IRR 16.5%，但占用现金流 ¥ 3,200,000。
+    </div>
+    <p style="font-size:12px;color:#7a8b9a;">系统建议：选项1与选项2可组合执行。最终方向由 Yohoho 判断，系统不代行决策。</p >
+  </div>
+
+  <div class="section-title">证据链日志（不可篡改 · 实时追加）</div>
+  <div class="log" id="log">
+    <div><span class="ts">[08:00:02]</span> <span class="ok">SYSTEM</span> 晨间简报生成完毕 · 待决事项 2 项</div>
+    <div><span class="ts">[08:00:02]</span> <span class="ok">L1</span> 子公司A 排产微调已自动执行（订单#A-2291 插单）· 哈希 0x3f8a…c21</div>
+    <div><span class="ts">[08:00:03]</span> <span class="ok">L2</span> 子公司C 非关键耗材补货 ¥ 12,400 已自动执行 · 24h 默许窗口</div>
+  </div>
+
+  <div style="margin-top:24px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+    <button class="btn-freeze" id="freezeBtn" onclick="toggleFreeze()">⏸ 全面暂停（一键熔断）</button>
+    <span style="font-size:12px;color:#7a8b9a;">熔断为硬编码规则，独立于AI推理层运行</span>
+  </div>
+
+  <div class="footer">
+    Demo 仅用于演示交互逻辑 · 所有数据为示例 · 真实系统需接入 MES / ERP / 银行支付接口 / 数字孪生底座<br>
+    AI 提议 · Yohoho 确认 · 机器执行 · 全程留痕
+  </div>
+</div>
+
+<script>
+  let frozen = false;
+  const logEl = document.getElementById('log');
+  const statusEl = document.getElementById('sysStatus');
+  const freezeBtn = document.getElementById('freezeBtn');
+
+  function now(){ const d=new Date(); return d.toTimeString().slice(0,8); }
+
+  function appendLog(tag, cls, msg){
+    const div = document.createElement('div');
+    div.innerHTML = `<span class="ts">[${now()}]</span> <span class="${cls}">${tag}</span> ${msg}`;
+    logEl.appendChild(div);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  function decide(cardId, action, detail){
+    if(frozen){ alert('系统已熔断，请先恢复运行。'); return; }
+    const card = document.getElementById(cardId);
+    const title = card.querySelector('h3').textContent;
+    const cls = action==='批准' ? 'ok' : action==='否决' ? 'no' : 'warn';
+    appendLog(action, cls, `${title} → ${action}（${detail}）· 哈希 0x${Math.random().toString(16).slice(2,10)}…`);
+    card.classList.add('resolved');
+    card.querySelector('.actions').innerHTML = `<span style="font-size:13px;color:${action==='批准'?'#4fd1c5':action==='否决'?'#ff8a8a':'#f0b860'};">已${action} · ${detail}</span>`;
+    updatePending();
+  }
+
+  function updatePending(){
+    const n = document.querySelectorAll('.card[id^="card"]:not(.resolved)').length;
+    document.getElementById('pendingCount').textContent = `· ${n} 项`;
+  }
+
+  function toggleFreeze(){
+    frozen = !frozen;
+    if(frozen){
+      statusEl.textContent = '■ 系统已熔断 · 所有自动化动作挂起';
+      statusEl.classList.add('frozen');
+      freezeBtn.classList.add('active');
+      freezeBtn.textContent = '▶ 恢复运行';
+      appendLog('FROZEN','no','全面暂停触发 · 非关键支出冻结 · 新合同暂停 · 等待 Yohoho 恢复');
+    } else {
+      statusEl.textContent = '● 系统运行中 · L1/L2 自动执行';
+      statusEl.classList.remove('frozen');
+      freezeBtn.classList.remove('active');
+      freezeBtn.textContent = '⏸ 全面暂停（一键熔断）';
+      appendLog('RESUME','ok','熔断解除 · L1/L2 自动化恢复');
+    }
+  }
+</script>
+</body>
+</html>
